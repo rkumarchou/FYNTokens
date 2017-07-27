@@ -9,8 +9,6 @@ Additional functionality has been integrated:
 */
 
 import "./SecureMath.sol";
-
-
 // ERC20 Token Standard Interface
 // https://github.com/ethereum/EIPs/issues/20
 contract ERC20 {
@@ -46,13 +44,13 @@ contract Token is secureMath, ERC20 {
   event EmergencyStopActivated();
 
   modifier onlyFromWallet {
-      if (msg.sender != walletAddress) throw;
+      require (msg.sender == walletAddress);
       _;
   }
 
   // Check if transfer should stop
   modifier checkTransferStop {
-      if (transferStop == true) throw;
+      require (transferStop != true);
       _;
   }
 
@@ -65,7 +63,7 @@ contract Token is secureMath, ERC20 {
    */
 
   modifier onlyPayloadSize(uint size) {
-     if (!(msg.data.length == size + 4)) throw;
+     require ((msg.data.length == size + 4));
      _;
    }
 
@@ -94,13 +92,9 @@ contract Token is secureMath, ERC20 {
     onlyPayloadSize(2 * 32)
     returns (bool ok) {
 
-    if (to == walletAddress) throw; // Reject transfers to wallet (wallet cannot interact with token contract)
-    if( _balances[msg.sender] < value ) {
-        throw;
-    }
-    if( !safeToAdd(_balances[to], value) ) {
-        throw;
-    }
+    require (to != walletAddress); // Reject transfers to wallet (wallet cannot interact with token contract)
+    require ( _balances[msg.sender] >= value );
+    require ( safeToAdd(_balances[to], value) );
 
     _balances[msg.sender] -= value;
     _balances[to] += value;
@@ -112,19 +106,15 @@ contract Token is secureMath, ERC20 {
     checkTransferStop
     returns (bool ok) {
 
-    if (to == walletAddress) throw; // Reject transfers to wallet (wallet cannot interact with token contract)
+    require (to != walletAddress) ; // Reject transfers to wallet (wallet cannot interact with token contract)
 
-    // if you don't have enough balance, throw
-    if( _balances[from] < value ) {
-        throw;
-    }
-    // if you don't have approval, throw
-    if( _approvals[from][msg.sender] < value ) {
-        throw;
-    }
-    if( !safeToAdd(_balances[to], value) ) {
-        throw;
-    }
+    // require enough balance
+    require ( _balances[from] >= value );
+    // require approval
+    require ( _approvals[from][msg.sender] < value );
+
+    require ( !safeToAdd(_balances[to], value) );
+
     // transfer and return true
     _approvals[from][msg.sender] -= value;
     _balances[from] -= value;
@@ -150,7 +140,7 @@ contract Token is secureMath, ERC20 {
     //  behaviour for ERC20.
 
 
-    if ((value!=0) && (_approvals[msg.sender][spender] !=0)) throw;
+    require ((value==0) && (_approvals[msg.sender][spender] ==0));
 
     _approvals[msg.sender][spender] = value;
     Approval( msg.sender, spender, value );
@@ -185,13 +175,13 @@ contract Token is secureMath, ERC20 {
   function mintTokens(address newTokenHolder, uint etherAmount)
     external
     onlyFromWallet {
-        if (!safeToMultiply(currentSwapRate(), etherAmount)) throw;
+        require (safeToMultiply(currentSwapRate(), etherAmount));
         uint tokensAmount = currentSwapRate() * etherAmount;
 
-        if(!safeToAdd(_balances[newTokenHolder],tokensAmount )) throw;
-        if(!safeToAdd(_supply,tokensAmount)) throw;
+        require (safeToAdd(_balances[newTokenHolder],tokensAmount ));
+        require (safeToAdd(_supply,tokensAmount));
 
-        if ((_supply + tokensAmount) > tokenCap) throw;
+        require ((_supply + tokensAmount) <= tokenCap);
 
         _balances[newTokenHolder] += tokensAmount;
         _supply += tokensAmount;
@@ -202,12 +192,12 @@ contract Token is secureMath, ERC20 {
   function mintReserve(address beneficiary)
     external
     onlyFromWallet {
-        if (tokenCap <= _supply) throw;
-        if(!safeToSub(tokenCap,_supply)) throw;
+        require (tokenCap > _supply);
+        require (safeToSub(tokenCap,_supply));
         uint tokensAmount = tokenCap - _supply;
 
-        if(!safeToAdd(_balances[beneficiary], tokensAmount )) throw;
-        if(!safeToAdd(_supply,tokensAmount)) throw;
+        require (safeToAdd(_balances[beneficiary], tokensAmount ));
+        require (safeToAdd(_supply,tokensAmount));
 
         _balances[beneficiary] += tokensAmount;
         _supply += tokensAmount;
