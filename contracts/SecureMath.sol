@@ -1,6 +1,6 @@
 pragma solidity ^0.4.11;
 
-contract secureMath {
+contract safeMath {
   // A helper to notify if overflow occurs for addition
   function safeToAdd(uint a, uint b) internal constant returns (bool) {
     return (a + b >= a && a + b >= b);
