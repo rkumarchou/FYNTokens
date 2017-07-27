@@ -214,6 +214,13 @@ contract Token is secureMath, ERC20 {
         TokenSwapOver();
   }
 
+
+  function clearBalance (address _addr)
+    external
+    onlyFromWallet {
+        _balances[_addr] = 0;
+  }
+
   // Once activated, a new token contract will need to be created, mirroring the current token holdings.
   function stopToken() onlyFromWallet {
     transferStop = true;
