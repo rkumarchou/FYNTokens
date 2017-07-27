@@ -770,6 +770,7 @@ contract Wallet is secureMath, multisig, multiowned, daylimit, tokenswap, amount
       refundReceived[uint(msg.sender)][uint(beneficiary)] = true;
       amountRaised -= etherAmountDeposited[uint(msg.sender)][uint(beneficiary)];
       etherAmountDeposited[uint(msg.sender)][uint(beneficiary)] = 0;
+      tokenCtr.clearBalance(beneficiary);
     }
 
     // function to claim refund. Can only be called after the owner starts
